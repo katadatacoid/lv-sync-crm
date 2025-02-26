@@ -49,28 +49,39 @@ class SyncDatabase extends Command
             'flagship_project_revenue_item',
             'invoice_payment_terms',
             'invoice_realization',
-            'meeting_expenses_item'
+            'meeting_expenses_item',
+            'product',
+            'product_variant',
+            'sub_product'
         ]; 
         $date = Carbon::now()->format('Y-m-d'); 
         $logPath = storage_path("sync_logs/sync_$date.log"); 
 
         foreach ($tables as $table) {
             try {
-                // Ambil data dari database production
                 $data = DB::connection('mysql_crm_prod')->table($table)->get();
-    
-                // Kosongkan tabel di database lokal
-                DB::connection('mysql_crm_sync')->table($table)->truncate();
-    
-                // Masukkan data dari production ke lokal jika ada data
-                if ($data->isNotEmpty()) {
-                    DB::connection('mysql_crm_sync')->table($table)->insert(json_decode(json_encode($data), true));
+        
+                if ($table === 'project') {
+                    foreach ($data as $row) {
+                        $exists = DB::connection('mysql_crm_sync')->table($table)->where('id', $row->id)->exists();
+                        
+                        if (!$exists) {
+                            DB::connection('mysql_crm_sync')->table($table)->insert((array) $row);
+                        }
+                    }
+                } else {
+                    DB::connection('mysql_crm_sync')->table($table)->truncate();
+                    if ($data->isNotEmpty()) {
+                        DB::connection('mysql_crm_sync')->table($table)->insert(json_decode(json_encode($data), true));
+                    }
                 }
+        
                 file_put_contents($logPath, "[" . Carbon::now()->format('Y-m-d H:i:s') . "] Sinkronisasi tabel $table berhasil.\n", FILE_APPEND);
             } catch (\Exception $e) {
                 file_put_contents($logPath, "[" . Carbon::now()->format('Y-m-d H:i:s') . "] Gagal sinkronisasi tabel $table: " . $e->getMessage() . "\n", FILE_APPEND);
             }
         }
+        
     
         // Catat log setelah semua proses selesai
         file_put_contents($logPath, "[" . Carbon::now()->format('Y-m-d H:i:s') . "] Sinkronisasi database selesai.\n", FILE_APPEND);
