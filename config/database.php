@@ -57,13 +57,13 @@ return [
             'engine' => null,
         ],
 
-        'mysql_crm_sync' => [
+        'mysql_crm_looker' => [
             'driver' => 'mysql',
-            'host' => env('DB_HOST', '127.0.0.1'),
-            'port' => env('DB_PORT', '3306'),
-            'database' => env('DB_DATABASE', 'forge'),
-            'username' => env('DB_USERNAME', 'forge'),
-            'password' => env('DB_PASSWORD', ''),
+            'host' => env('DB_HOST_LOOKER', '127.0.0.1'),
+            'port' => env('DB_PORT_LOOKER', '3306'),
+            'database' => env('DB_DATABASE_LOOKER', 'forge'),
+            'username' => env('DB_USERNAME_LOOKER', 'forge'),
+            'password' => env('DB_PASSWORD_LOOKER', ''),
             'charset' => 'utf8mb4',
             'collation' => 'utf8mb4_unicode_ci',
             'prefix' => '',
