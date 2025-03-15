@@ -28,10 +28,12 @@ class InsertProjectRevenue extends Command
      */
     public function handle()
     {
-        $logPath = storage_path('sync_logs/sync_projects.log');
+        $date = Carbon::now()->format('Y-m-d');
+        $logPath = storage_path("sync_projects/log_$date.log");
         $dbProd = DB::connection('mysql_crm_prod'); // Koneksi ke database Prod CRM
-        $dbLooker = DB::connection('mysql'); // Koneksi ke database Looker CRM
-        
+        $dbLooker = DB::connection('mysql_crm_looker'); // Koneksi ke database Looker CRM
+
+
         try {
             file_put_contents($logPath, "[" . Carbon::now()->format('Y-m-d H:i:s') . "] Memulai proses sinkronisasi project.\n", FILE_APPEND);
 
@@ -48,7 +50,7 @@ class InsertProjectRevenue extends Command
                 ->orderBy('p.id')
                 ->get();
 
-            $existingProjects = $dbLooker->table('projects')->pluck('project_id')->toArray(); // Ambil semua ID yg sudah ada
+            $existingProjects = $dbLooker->table('projects')->pluck('project_id')->toArray(); 
 
             $updates = [];
             $inserts = [];
@@ -79,17 +81,11 @@ class InsertProjectRevenue extends Command
                     if (json_encode($newData) !== json_encode($oldData)) {
                         $newData['updated_at'] = now();
                         $updates[] = $newData;
-
-                        file_put_contents($logPath, "[" . Carbon::now()->format('Y-m-d H:i:s') . "] Update project ID: " . $row->project_id . "\n", FILE_APPEND);
-                    } else {
-                        file_put_contents($logPath, "[" . Carbon::now()->format('Y-m-d H:i:s') . "] Skip project ID: " . $row->project_id . " (tidak ada perubahan)\n", FILE_APPEND);
                     }
                 } else {
                     $newData['created_at'] = now();
                     $newData['updated_at'] = now();
                     $inserts[] = $newData;
-
-                    file_put_contents($logPath, "[" . Carbon::now()->format('Y-m-d H:i:s') . "] Insert project ID: " . $row->project_id . "\n", FILE_APPEND);
                 }
             }
 
@@ -98,21 +94,21 @@ class InsertProjectRevenue extends Command
                 $dbLooker->table('projects')->insert($inserts);
             }
 
+            $updatedCount = 0;
             if (!empty($updates)) {
                 foreach ($updates as $update) {
                     $dbLooker->table('projects')
                         ->where('project_id', $update['project_id'])
                         ->update($update);
                 }
+                $updatedCount = count($updates);
             }
 
-            file_put_contents($logPath, "[" . Carbon::now()->format('Y-m-d H:i:s') . "] Sinkronisasi project selesai.\n", FILE_APPEND);
+            file_put_contents($logPath, "[" . Carbon::now()->format('Y-m-d H:i:s') . "] Sinkronisasi project selesai. Total update: {$updatedCount} record.\n", FILE_APPEND);
         } catch (\Exception $e) {
             file_put_contents($logPath, "[" . Carbon::now()->format('Y-m-d H:i:s') . "] Gagal sinkronisasi project: " . $e->getMessage() . "\n", FILE_APPEND);
         }
 
-        $this->info('Data revenue berhasil disimpan ke tabel project.');
-    }
-
-    
+        $this->info("Data revenue berhasil disimpan ke tabel project. Total update: {$updatedCount} record.");
+    }    
 }

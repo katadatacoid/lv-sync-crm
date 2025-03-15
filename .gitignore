@@ -18,3 +18,5 @@ yarn-error.log
 /.idea
 /.vscode
 storage/sync_logs/
+storage/sync_dumps/
+storage/sync_projects/
