@@ -47,7 +47,11 @@ class SyncDatabase extends Command
             'invoice_realization',
             'product',
             'product_variant',
-            'sub_product'
+            'sub_product',
+            'client',
+            'cogs_item',
+            'invoice_payment_terms',
+            'project_cogs_item_realization'
         ];
 
         $dbProd = DB::connection('mysql_crm_prod');
